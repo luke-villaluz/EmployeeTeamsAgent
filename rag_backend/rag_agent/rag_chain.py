@@ -7,7 +7,7 @@ from langchain.chains import RetrievalQA
 
 def build_rag_chain():
     # Load vectorstore
-    vectorstore = FAISS.load_local("faiss_index", embeddings=OllamaEmbeddings(model="phi3"), allow_dangerous_deserialization=True)
+    vectorstore = FAISS.load_local("rag_backend/faiss_index", embeddings=OllamaEmbeddings(model="phi3"), allow_dangerous_deserialization=True)
 
     # Initialize retriever
     retriever = vectorstore.as_retriever()

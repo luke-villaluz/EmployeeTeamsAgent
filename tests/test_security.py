@@ -8,7 +8,7 @@ client = TestClient(app)
 
 class TestSecurity:
     def test_cors_headers(self):
-        response = client.get("/health")
+        response = client.get("/health", headers={"Origin": "http://testclient"})
         assert "access-control-allow-origin" in response.headers
 
     def test_input_validation(self):

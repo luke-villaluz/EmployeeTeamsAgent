@@ -64,7 +64,11 @@ async def startup_event():
 @app.get("/")
 async def root():
     """Serve the web frontend"""
-    return FileResponse("static/index.html")
+    static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+    index_path = os.path.join(static_dir, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"message": "Web UI not found"}
 
 @app.get("/api")
 async def api_info():
