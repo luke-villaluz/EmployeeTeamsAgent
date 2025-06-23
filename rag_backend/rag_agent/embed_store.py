@@ -1,11 +1,11 @@
-from ragagent.load_excel import load_excel_data
+from rag_agent.load_excel import load_excel_data
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import OllamaEmbeddings
 from pathlib import Path
 
 # === Settings ===
-EXCEL_PATH = Path("data/MasterEmployeeProfiles.xlsx") 
-INDEX_PATH = Path("index/faiss_index")          # output location
+EXCEL_PATH = Path("../data/MasterEmployeeProfiles.xlsx") 
+INDEX_PATH = Path("faiss_index")          # output location
 
 def embed_and_store():
     print(f"Loading Excel: {EXCEL_PATH}")

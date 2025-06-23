@@ -1,5 +1,3 @@
-# src/ragagent/load_excel.py
-
 from langchain_core.documents import Document
 import pandas as pd
 from typing import List
@@ -9,7 +7,7 @@ def load_excel_data(filepath: str) -> List[Document]:
     Load rows from the first sheet of an Excel file and convert each row into a LangChain Document.
     Each row is converted into a pipe-delimited string with metadata for row index.
     """
-    df = pd.read_excel(filepath, sheet_name=0)  # Load only the first sheet
+    df = pd.read_excel(filepath, sheet_name=0, engine="openpyxl")  # Load only the first sheet
     df = df.dropna(how="all")  # Drop rows where all values are NaN
 
     documents = []
