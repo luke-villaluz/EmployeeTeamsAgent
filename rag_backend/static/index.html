@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Teams RAG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .query-form {
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .response {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .response h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .response p {
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            border-left-color: #e74c3c;
+            color: #c0392b;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .health-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .health-good { background: #27ae60; }
+        .health-bad { background: #e74c3c; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Employee Teams RAG</h1>
+            <p>Local AI-powered employee information assistant</p>
+        </div>
+        
+        <div class="content">
+            <div class="query-form">
+                <div class="input-group">
+                    <input type="text" id="queryInput" placeholder="Ask about employees, departments, roles..." />
+                    <button onclick="sendQuery()" id="sendBtn">Ask</button>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="includeSources" />
+                    <label for="includeSources">Include source documents</label>
+                </div>
+            </div>
+
+            <div id="response" style="display: none;"></div>
+            
+            <div class="stats" id="stats" style="display: none;">
+                <div class="stat-card">
+                    <h4>System Health</h4>
+                    <div id="healthStatus">Loading...</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Total Employees</h4>
+                    <div id="employeeCount">-</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Ollama Status</h4>
+                    <div id="ollamaStatus">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        
+        // Load stats on page load
+        window.onload = function() {
+            loadStats();
+        };
+
+        async function loadStats() {
+            try {
+                const [healthResponse, statsResponse] = await Promise.all([
+                    fetch(`${API_BASE}/health`),
+                    fetch(`${API_BASE}/stats`)
+                ]);
+                
+                if (healthResponse.ok) {
+                    const health = await healthResponse.json();
+                    document.getElementById('healthStatus').innerHTML = 
+                        `<span class="health-indicator ${health.status === 'healthy' ? 'health-good' : 'health-bad'}"></span>${health.status}`;
+                    document.getElementById('employeeCount').textContent = health.total_employees || 'Unknown';
+                    document.getElementById('ollamaStatus').textContent = health.ollama_available ? 'Running' : 'Stopped';
+                    document.getElementById('stats').style.display = 'grid';
+                }
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        async function sendQuery() {
+            const query = document.getElementById('queryInput').value.trim();
+            const includeSources = document.getElementById('includeSources').checked;
+            const sendBtn = document.getElementById('sendBtn');
+            const responseDiv = document.getElementById('response');
+
+            if (!query) {
+                alert('Please enter a query');
+                return;
+            }
+
+            // Show loading state
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Processing...';
+            responseDiv.style.display = 'block';
+            responseDiv.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Processing your query...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`${API_BASE}/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: query,
+                        include_sources: includeSources
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    let sourcesHtml = '';
+                    if (data.sources && data.sources.length > 0) {
+                        sourcesHtml = `
+                            <h4>Sources:</h4>
+                            <ul>
+                                ${data.sources.map(source => `<li>${source.page_content.substring(0, 100)}...</li>`).join('')}
+                            </ul>
+                        `;
+                    }
+
+                    responseDiv.innerHTML = `
+                        <div class="response">
+                            <h3>Answer:</h3>
+                            <p>${data.response}</p>
+                            ${data.confidence ? `<p><strong>Confidence:</strong> ${(data.confidence * 100).toFixed(1)}%</p>` : ''}
+                            ${sourcesHtml}
+                        </div>
+                    `;
+                } else {
+                    responseDiv.innerHTML = `
+                        <div class="response error">
+                            <h3>Error:</h3>
+                            <p>${data.detail || 'An error occurred while processing your query.'}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = `
+                    <div class="response error">
+                        <h3>Connection Error:</h3>
+                        <p>Failed to connect to the API. Make sure the backend is running on localhost:8000</p>
+                    </div>
+                `;
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Ask';
+            }
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('queryInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendQuery();
+            }
+        });
+    </script>
+</body>
+</html> 
