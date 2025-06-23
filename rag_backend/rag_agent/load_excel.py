@@ -8,7 +8,9 @@ def load_excel_data(filepath: str) -> List[Document]:
     Each row is converted into a pipe-delimited string with metadata for row index.
     """
     df = pd.read_excel(filepath, sheet_name=0, engine="openpyxl")  # Load only the first sheet
+    print(f"Loaded {df.shape[0]} rows from Excel (including blanks)")
     df = df.dropna(how="all")  # Drop rows where all values are NaN
+    print(f"Rows after dropping completely blank: {df.shape[0]}")
 
     documents = []
     for index, row in df.iterrows():
