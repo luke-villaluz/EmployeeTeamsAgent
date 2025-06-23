@@ -5,7 +5,8 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 import logging
-from rag_agent.rag_chain import build_rag_chain
+from rag_backend.rag_agent.rag_chain import build_rag_chain
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -27,7 +28,9 @@ app.add_middleware(
 )
 
 # Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+if os.path.isdir(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Global RAG chain instance
 rag_chain = None
@@ -120,7 +123,7 @@ async def query_endpoint(request: QueryRequest):
         logger.info(f"Processing query: {request.message}")
         
         # Process the query
-        result = rag_chain.invoke({"question": request.message})
+        result = rag_chain.invoke({"query": request.message})
         
         # Extract response and metadata
         answer = result.get("result", "No answer found")

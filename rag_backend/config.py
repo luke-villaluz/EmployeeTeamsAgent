@@ -3,7 +3,7 @@ Configuration management for the RAG backend
 """
 import os
 from typing import Optional
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     """Application settings"""
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     faiss_allow_dangerous_deserialization: bool = True
     
     # Data Configuration
-    excel_data_path: str = "../data/employees.xlsx"
+    excel_data_path: str = "../data/MasterEmployeeProfiles.xlsx"
     
     # RAG Configuration
     rag_chain_type: str = "stuff"
