@@ -1,0 +1,9 @@
+langchain
+langchain-community
+faiss-cpu
+pandas
+openpyxl
+fastapi
+uvicorn
+python-multipart
+pytest
