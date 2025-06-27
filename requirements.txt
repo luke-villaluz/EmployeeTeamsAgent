@@ -1,3 +1,5 @@
+# quick change in text to test for git corruption
+
 # Core RAG dependencies
 langchain==0.1.0
 langchain-community==0.0.10
